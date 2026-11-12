@@ -28,22 +28,21 @@ def _show_feedback_form() -> None:
     st.header("✍️ Submit feedback")
     st.write("Share your experience to help improve our courses.")
 
-    with st.container(border=True):
-        with st.form("feedback_form", clear_on_submit=True):
-            student_name = st.text_input("Student Name")
-            course_name = st.text_input("Course Name")
-            rating = st.selectbox(
-                "Rating",
-                options=(1, 2, 3, 4, 5),
-                index=None,
-                placeholder="Select a rating",
-            )
-            comments = st.text_area("Comments", placeholder="Optional")
-            submitted = st.form_submit_button(
-                "Submit feedback",
-                type="primary",
-                use_container_width=True,
-            )
+    with st.form("feedback_form", clear_on_submit=True):
+        student_name = st.text_input("Student Name")
+        course_name = st.text_input("Course Name")
+        rating = st.selectbox(
+            "Rating",
+            options=(1, 2, 3, 4, 5),
+            index=None,
+            placeholder="Select a rating",
+        )
+        comments = st.text_area("Comments", placeholder="Optional")
+        submitted = st.form_submit_button(
+            "Submit feedback",
+            type="primary",
+            use_container_width=True,
+        )
 
     if not submitted:
         return
@@ -163,9 +162,11 @@ def _show_analytics() -> None:
 
 
 def _show_overview() -> None:
-    st.subheader("DASHBOARD")
-    st.title("🎓 Overview")
-    st.write("A snapshot of student sentiment and course performance.")
+    st.caption("DASHBOARD OVERVIEW")
+    st.title("Feedback, at a glance")
+    st.write(
+        "A welcoming space to share feedback and understand course performance."
+    )
 
     try:
         average_rating = calculate_average_rating()
@@ -176,10 +177,9 @@ def _show_overview() -> None:
         st.error(f"Could not load dashboard overview: {exc}")
         return
 
-    average_value = f"{average_rating:.2f} / 5" if average_rating is not None else "—"
     if not highest_rated_courses:
         highest_course_name = "No ratings yet"
-        highest_course_average = "Submit the first review"
+        highest_course_average = "—"
     elif len(highest_rated_courses) == 1:
         highest_course = highest_rated_courses[0]
         highest_course_name = highest_course["course_name"]
@@ -192,24 +192,41 @@ def _show_overview() -> None:
             f'{highest_rated_courses[0]["average_rating"]:.2f} / 5 · tied'
         )
 
-    st.markdown("#### At a glance")
+    st.markdown("#### Key indicators")
     feedback_column, average_column, course_column = st.columns(3)
     with feedback_column:
         st.metric("📝 Total feedback", len(feedback_records))
     with average_column:
-        st.metric("⭐ Overall average rating", average_value)
+        st.metric(
+            "⭐ Overall average rating",
+            f"{average_rating:.2f} / 5" if average_rating is not None else "—",
+        )
     with course_column:
         st.metric(
             "🏆 Highest rated course",
-            highest_course_name,
-            delta=highest_course_average,
+            highest_course_average,
+            delta=highest_course_name,
             delta_color="off",
         )
 
     st.divider()
     st.subheader("🕒 Recent feedback")
     if not feedback_records:
-        st.info("No feedback has been submitted yet. Add the first response to get started.")
+        st.info(
+            "No feedback has been submitted yet. Add the first response to get started."
+        )
+        st.markdown(
+            """
+            <div class="welcome-card">
+                <div class="welcome-icon">✍️</div>
+                <div>
+                    <strong>Your feedback helps courses grow.</strong>
+                    <p>Share a rating and a few thoughts to get the dashboard started.</p>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         return
 
     recent_records = [
@@ -243,6 +260,7 @@ def main() -> None:
             --feedback-border: #e4eaf3;
         }
         .stApp { background: #f5f7fb; color: var(--feedback-ink); }
+        [data-testid="stMain"] > div { background: transparent; }
         [data-testid="stSidebar"] {
             background: var(--feedback-surface);
             border-right: 1px solid var(--feedback-border);
@@ -250,6 +268,23 @@ def main() -> None:
         .block-container { padding-top: 2rem; padding-bottom: 3rem; max-width: 1440px; }
         h1, h2, h3 { color: var(--feedback-ink); letter-spacing: -0.02em; }
         [data-testid="stCaptionContainer"] p { color: var(--feedback-muted); }
+        [data-testid="stMarkdownContainer"] p { line-height: 1.65; }
+        [data-testid="stRadio"] > label { display: none; }
+        [data-testid="stRadio"] label[data-testid="stWidgetLabel"] { display: none; }
+        [data-testid="stRadio"] div[role="radiogroup"] {
+            gap: 0.35rem;
+        }
+        [data-testid="stRadio"] div[role="radiogroup"] label {
+            padding: 0.55rem 0.75rem;
+            border-radius: 0.65rem;
+            transition: background-color 140ms ease, color 140ms ease;
+        }
+        [data-testid="stRadio"] div[role="radiogroup"] label:hover {
+            background: #eef3ff;
+        }
+        [data-testid="stRadioOption"] input[type="radio"] {
+            accent-color: var(--feedback-accent);
+        }
         [data-testid="stMetric"] {
             background: var(--feedback-surface);
             border: 1px solid var(--feedback-border);
@@ -258,6 +293,11 @@ def main() -> None:
             padding: 1.1rem 1.25rem;
             box-shadow: 0 4px 14px rgba(23, 43, 77, 0.04);
             min-height: 108px;
+            transition: transform 140ms ease, box-shadow 140ms ease;
+        }
+        [data-testid="stMetric"]:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(23, 43, 77, 0.08);
         }
         [data-testid="stMetricLabel"] p {
             color: var(--feedback-muted);
@@ -270,22 +310,97 @@ def main() -> None:
         [data-testid="stVerticalBlockBorderWrapper"] {
             background: var(--feedback-surface);
             border-radius: 0.85rem;
+            border-color: var(--feedback-border);
+            box-shadow: 0 4px 14px rgba(23, 43, 77, 0.035);
         }
-        [data-testid="stRadio"] label { font-weight: 500; }
+        [data-testid="stForm"] {
+            padding: 1.35rem;
+            border: 1px solid var(--feedback-border);
+            border-radius: 0.85rem;
+            background: var(--feedback-surface);
+            box-shadow: 0 4px 14px rgba(23, 43, 77, 0.035);
+        }
+        .welcome-card {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1rem;
+            padding: 1.2rem 1.4rem;
+            border: 1px solid var(--feedback-border);
+            border-radius: 0.85rem;
+            background: linear-gradient(110deg, #ffffff 0%, #edf3ff 100%);
+            color: var(--feedback-ink);
+        }
+        .welcome-icon {
+            display: grid;
+            width: 2.8rem;
+            height: 2.8rem;
+            flex: 0 0 2.8rem;
+            place-items: center;
+            border-radius: 0.75rem;
+            background: #e3ecff;
+            font-size: 1.35rem;
+        }
+        .welcome-card p {
+            margin: 0.2rem 0 0;
+            color: var(--feedback-muted);
+        }
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            margin: 0.2rem 0 0.35rem;
+            color: var(--feedback-ink);
+            font-size: 1.15rem;
+            font-weight: 750;
+            letter-spacing: -0.02em;
+        }
+        .sidebar-brand-icon {
+            display: grid;
+            width: 2rem;
+            height: 2rem;
+            place-items: center;
+            border-radius: 0.6rem;
+            background: #e8efff;
+        }
         .stButton > button[kind="primary"],
-        [data-testid="stFormSubmitButton"] button {
+        [data-testid="stFormSubmitButton"] button[kind="primaryFormSubmit"] {
+            background: var(--feedback-accent);
+            border-color: var(--feedback-accent);
+            color: #ffffff;
             border-radius: 0.6rem;
             font-weight: 600;
+        }
+        .stButton > button[kind="primary"]:hover,
+        [data-testid="stFormSubmitButton"] button[kind="primaryFormSubmit"]:hover {
+            background: #2456c4;
+            border-color: #2456c4;
+            color: #ffffff;
+        }
+        [data-testid="stDataFrame"] {
+            border: 1px solid var(--feedback-border);
+            border-radius: 0.75rem;
+            overflow: hidden;
+        }
+        @media (max-width: 700px) {
+            .block-container { padding: 1.25rem 1rem 2rem; }
+            [data-testid="stMetric"] { min-height: 96px; padding: 0.9rem; }
+            [data-testid="stMetricValue"] { font-size: 1.45rem; }
         }
         </style>
         """,
         unsafe_allow_html=True,
     )
-    st.title("🎓 Student Feedback Management")
-    st.caption("A clear view of student feedback and course performance")
-
     with st.sidebar:
-        st.markdown("## 🎓 Feedback Portal")
+        st.markdown(
+            """
+            <div class="sidebar-brand">
+                <span class="sidebar-brand-icon">🎓</span>
+                <span>Feedback Portal</span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         st.caption("Student feedback dashboard")
         st.divider()
         page = st.radio(
